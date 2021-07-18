@@ -1,0 +1,41 @@
+//not yet implimented
+//if directive
+
+if(params.len != 1) then exit("params should be 2.Now it's " + params.len)
+if(params[0] == null) then exit("it should be ""gpp [source file]""")
+
+//params
+sourcename = params[0]
+comp = get_shell.host_computer
+concattxt = ""
+
+//create tmp file
+parentfolder = comp.File(current_path)
+files = parentfolder.get_files
+for file in files
+	if file.name == "tmp.src" then exit("tmp.src file already exists.")
+end for
+comp.touch(current_path, "tmp.src")
+tmpfile = comp.File(current_path + "/tmp.src")
+
+//begin
+sourcetxt = comp.File(current_path + "/" + sourcename).get_content
+sourcelist = sourcetxt.split("\n")
+if typeof(sourcelist) == "String" then sourcelist = [sourcelist]
+for i in range(0, sourcelist.len - 1)
+	//adding txt to new file
+	print(sourcelist[i])
+	if sourcelist[i][0:8] != "#include" then
+		concattxt = concattxt + sourcelist[i] + "\n"
+	else
+		includefile = sourcelist[i][10:-1]
+		includetxt = comp.File(current_path + "/" + includefile).get_content
+		if includetxt == null then exit("file" + includefile + "not found")
+		concattxt = concattxt + includetxt
+	end if
+end for
+
+//build
+tmpfile.set_content(concattxt)
+get_shell.build(current_path + "/" + tmpfile.name, current_path)
+tmpfile.delete
